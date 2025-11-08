@@ -19,6 +19,7 @@ from .const import (  # noqa: F401
     CONF_PRIVATE_KEY,
     CONF_PROJECT_ID,
     CONF_REPORT_STATE,
+    CONF_ASYNC_FULFILLMENT,
     CONF_ROOM_HINT,
     CONF_SECURE_DEVICES_PIN,
     CONF_SERVICE_ACCOUNT,
@@ -80,6 +81,7 @@ GOOGLE_ASSISTANT_SCHEMA = probatio.All(
             # str on purpose, makes sure it is configured correctly.
             probatio.Optional(CONF_SECURE_DEVICES_PIN): str,
             probatio.Optional(CONF_REPORT_STATE, default=False): cv.boolean,
+            probatio.Optional(CONF_ASYNC_FULFILLMENT): cv.boolean,
             probatio.Optional(CONF_SERVICE_ACCOUNT): GOOGLE_SERVICE_ACCOUNT,
             # deprecated configuration options
             probatio.Remove(CONF_ALLOW_UNLOCK): cv.boolean,
