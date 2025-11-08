@@ -61,7 +61,8 @@ def _get_homegraph_jwt(time, iss, key):
 
 async def _get_homegraph_token(
     hass: HomeAssistant, jwt_signed: str
-) -> dict[str, Any] | list[Any] | Any:
+) -> dict[str, Any]:
+    """Get homegraph token from Google."""
     headers = {
         "Authorization": f"Bearer {jwt_signed}",
         "Content-Type": "application/x-www-form-urlencoded",
@@ -251,7 +252,12 @@ class GoogleConfig(AbstractConfig):
             return
 
         now = dt_util.utcnow()
-        if not self._access_token or now > self._access_token_renew or force:
+        if (
+            not self._access_token
+            or self._access_token_renew is None
+            or now > self._access_token_renew
+            or force
+        ):
             token = await _get_homegraph_token(
                 self.hass,
                 _get_homegraph_jwt(

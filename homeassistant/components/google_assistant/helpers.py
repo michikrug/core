@@ -114,12 +114,12 @@ class AbstractConfig(ABC):
 
     @property
     @abstractmethod
-    def enabled(self):
+    def enabled(self) -> bool:
         """Return if Google is enabled."""
 
     @property
     @abstractmethod
-    def entity_config(self):
+    def entity_config(self) -> dict[str, dict[str, Any]]:
         """Return entity config."""
 
     @property
@@ -157,7 +157,7 @@ class AbstractConfig(ABC):
         )
 
     @abstractmethod
-    def get_local_user_id(self, webhook_id):
+    def get_local_user_id(self, webhook_id) -> str | None:
         """Map webhook ID to a Home Assistant user ID.
 
         Any action initiated by Google Assistant via the local SDK will be attributed
@@ -175,7 +175,7 @@ class AbstractConfig(ABC):
         """Get agent user ID from context."""
 
     @abstractmethod
-    def get_agent_user_id_from_webhook(self, webhook_id):
+    def get_agent_user_id_from_webhook(self, webhook_id) -> str | None:
         """Map webhook ID to a Google agent user ID.
 
         Return None if no agent user id is found for the webhook_id.
@@ -186,7 +186,7 @@ class AbstractConfig(ABC):
         """Return if entity should be exposed."""
 
     @abstractmethod
-    def should_2fa(self, state):
+    def should_2fa(self, state) -> bool:
         """If an entity should have 2FA checked."""
 
     @abstractmethod
@@ -376,7 +376,8 @@ class AbstractConfig(ABC):
             return
 
         for agent_user_id in self.async_get_agent_users():
-            webhook_id = self.get_local_webhook_id(agent_user_id)
+            if (webhook_id := self.get_local_webhook_id(agent_user_id)) is None:
+                continue
             _LOGGER.debug(
                 "Unregister webhook handler %s for agent user id %s",
                 partial_redact(webhook_id),
@@ -409,8 +410,8 @@ class AbstractConfig(ABC):
 
         payload = await request.json()
 
+        msgid = "<UNKNOWN>"
         if _LOGGER.isEnabledFor(logging.DEBUG):
-            msgid = "<UNKNOWN>"
             if isinstance(payload, dict):
                 msgid = payload.get("requestId")
             _LOGGER.debug(
@@ -430,7 +431,7 @@ class AbstractConfig(ABC):
                     " found:\n%s\n"
                 ),
                 partial_redact(webhook_id),
-                pprint.pformat(async_redact_msg(payload, agent_user_id)),
+                pprint.pformat(async_redact_msg(payload, "")),
             )
             webhook.async_unregister(self.hass, webhook_id)
             return None
@@ -552,6 +553,8 @@ class GoogleEntity:
     @callback
     def should_expose_local(self) -> bool:
         """Return if the entity should be exposed locally."""
+        if self.state is None:
+            return False
         return (
             self.should_expose()
             and get_google_type(
@@ -579,6 +582,8 @@ class GoogleEntity:
     def might_2fa_traits(self) -> bool:
         """Return if the entity might encounter 2FA based on just traits."""
         state = self.state
+        if state is None:
+            return False
         domain = state.domain
         features = state.attributes.get(EntityStateAttribute.SUPPORTED_FEATURES, 0)
         device_class = state.attributes.get(EntityStateAttribute.DEVICE_CLASS)
@@ -593,6 +598,8 @@ class GoogleEntity:
         https://developers.google.com/actions/smarthome/create-app#actiondevicessync
         """
         state = self.state
+        if state is None:
+            raise ValueError(f"Cannot serialize {self.entity_id}: state is None")
         traits = self.traits()
         entity_config = self.config.entity_config.get(state.entity_id, {})
 
@@ -690,7 +697,7 @@ class GoogleEntity:
         """
         state = self.state
 
-        if state.state == STATE_UNAVAILABLE:
+        if state is None or state.state == STATE_UNAVAILABLE:
             return {"online": False}
 
         attrs = {"online": True}

@@ -325,13 +325,13 @@ class _Trait(ABC):
     commands: list[str] = []
 
     @staticmethod
-    def might_2fa(domain, features, device_class):
+    def might_2fa(domain, features, device_class) -> bool:
         """Return if the trait might ask for 2FA."""
         return False
 
     @staticmethod
     @abstractmethod
-    def supported(domain, features, device_class, attributes):
+    def supported(domain, features, device_class, attributes) -> bool:
         """Test if state is supported."""
 
     def __init__(self, hass: HomeAssistant, state, config) -> None:

@@ -58,6 +58,8 @@ class SyncButton(ButtonEntity):
         agent_user_id = self._google_config.get_agent_user_id_from_context(
             self._context
         )
+        if agent_user_id is None:
+            raise HomeAssistantError("Unable to get agent user ID from context")
         result = await self._google_config.async_sync_entities(agent_user_id)
         if result != 200:
             raise HomeAssistantError(

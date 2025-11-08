@@ -1,7 +1,9 @@
 """Google Report State implementation."""
 
 from collections import deque
+from datetime import datetime
 import logging
+from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
@@ -44,7 +46,7 @@ def async_enable_report_state(
     unsub_pending: CALLBACK_TYPE | None = None
     pending: deque[dict[str, Any]] = deque([{}])
 
-    async def report_states(now=None):
+    async def report_states(_: datetime | None = None) -> None:
         """Report the states."""
         nonlocal pending
         nonlocal unsub_pending
@@ -61,12 +63,10 @@ def async_enable_report_state(
         # reporting, schedule ourselves again
         if pending[0]:
             unsub_pending = async_call_later(
-                hass, REPORT_STATE_WINDOW, report_states_job
+                hass, REPORT_STATE_WINDOW, HassJob(report_states)
             )
         else:
             unsub_pending = None
-
-    report_states_job = HassJob(report_states)
 
     @callback
     def _async_entity_state_filter(data: EventStateChangedData) -> bool:
@@ -101,6 +101,8 @@ def async_enable_report_state(
             and old_state.state != new_state.state
             and (notifications := entity.notifications_serialize()) is not None
         ):
+            if TYPE_CHECKING:
+                assert entity.state is not None
             event_id = uuid4().hex
             payload = {
                 "devices": {"notifications": {entity.state.entity_id: notifications}}
@@ -140,23 +142,23 @@ def async_enable_report_state(
 
         if unsub_pending is None:
             unsub_pending = async_call_later(
-                hass, REPORT_STATE_WINDOW, report_states_job
+                hass, REPORT_STATE_WINDOW, HassJob(report_states)
             )
 
     @callback
     def extra_significant_check(
         hass: HomeAssistant,
         old_state: str,
-        old_attrs: dict,
+        old_attrs: dict | MappingProxyType,
         old_extra_arg: dict,
         new_state: str,
-        new_attrs: dict,
+        new_attrs: dict | MappingProxyType,
         new_extra_arg: dict,
-    ):
+    ) -> bool:
         """Check if the serialized data has changed."""
         return old_extra_arg != new_extra_arg
 
-    async def initial_report(_now):
+    async def initial_report(_: datetime | None = None) -> None:
         """Report initially all states."""
         nonlocal unsub, checker
         entities = {}
@@ -170,6 +172,10 @@ def async_enable_report_state(
             try:
                 entity_data = entity.query_serialize()
             except SmartHomeError:
+                continue
+
+            # Skip if entity state is None
+            if entity.state is None:
                 continue
 
             # Tell our significant change checker that we're reporting
