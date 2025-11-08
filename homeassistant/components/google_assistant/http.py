@@ -27,6 +27,7 @@ from .const import (
     CONF_EXPOSED_DOMAINS,
     CONF_PRIVATE_KEY,
     CONF_REPORT_STATE,
+    CONF_ASYNC_FULFILLMENT,
     CONF_SECURE_DEVICES_PIN,
     CONF_SERVICE_ACCOUNT,
     DOMAIN,
@@ -122,6 +123,11 @@ class GoogleConfig(AbstractConfig):
     def should_report_state(self):
         """Return if states should be proactively reported."""
         return self._config.get(CONF_REPORT_STATE)
+
+    @property
+    def should_fulfill_async(self):
+        """Return if intents should be executed asyncronously."""
+        return self._config.get(CONF_ASYNC_FULFILLMENT, self._config.get(CONF_REPORT_STATE))
 
     @override
     def get_local_user_id(self, webhook_id):
