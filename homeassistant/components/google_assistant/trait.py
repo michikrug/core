@@ -787,7 +787,7 @@ class SceneTrait(_Trait):
             self.state.domain,
             service,
             {ATTR_ENTITY_ID: self.state.entity_id},
-            blocking=(not self.config.should_report_state)
+            blocking=(not self.config.should_fulfill_async)
             and self.state.domain
             not in (BUTTON_DOMAIN, INPUT_BUTTON_DOMAIN, SCRIPT_DOMAIN),
             context=data.context,
@@ -1086,7 +1086,7 @@ class StartStopTrait(_Trait):
                 self.state.domain,
                 service,
                 {ATTR_ENTITY_ID: self.state.entity_id},
-                blocking=not self.config.should_report_state,
+                blocking=not self.config.should_fulfill_async,
                 context=data.context,
             )
 
