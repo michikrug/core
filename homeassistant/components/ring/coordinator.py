@@ -5,6 +5,7 @@ from collections.abc import Callable, Coroutine
 from dataclasses import dataclass
 import logging
 from typing import Any, override
+import random
 
 from ring_doorbell import (
     AuthenticationError,
@@ -19,6 +20,7 @@ from ring_doorbell.listen import RingEventListener
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.update_coordinator import (
     BaseDataUpdateCoordinatorProtocol,
     DataUpdateCoordinator,
@@ -146,6 +148,9 @@ class RingListenCoordinator(BaseDataUpdateCoordinatorProtocol):
         )
         self._listeners: dict[CALLBACK_TYPE, tuple[CALLBACK_TYPE, object | None]] = {}
         self._listen_callback_id: int | None = None
+        self._start_retry_unsub: CALLBACK_TYPE | None = None
+        self._start_attempts: int = 0
+        self._unavailable_logged: bool = False
 
         self.config_entry = config_entry
         self.start_timeout = 10
@@ -161,33 +166,93 @@ class RingListenCoordinator(BaseDataUpdateCoordinatorProtocol):
 
     async def async_shutdown(self) -> None:
         """Cancel any scheduled call, and ignore new runs."""
+        # Cancel any pending start retry
+        if self._start_retry_unsub is not None:
+            self._start_retry_unsub()
+            self._start_retry_unsub = None
         if self.event_listener.started:
             await self._async_stop_listen()
 
     async def _async_stop_listen(self) -> None:
-        self.logger.debug("Stopped ring listener")
-        await self.event_listener.stop()
-        self.logger.debug("Stopped ring listener")
+        """Stop listening for realtime events."""
+        # Cancel pending start retry timer
+        if self._start_retry_unsub is not None:
+            self._start_retry_unsub()
+            self._start_retry_unsub = None
+
+        self.logger.debug("Stopping ring listener")
+        try:
+            await self.event_listener.stop()
+        except Exception:
+            # Avoid noisy logs on normal teardown errors
+            self.logger.debug("Error while stopping event listener", exc_info=True)
+        else:
+            self.logger.debug("Stopped ring listener")
 
     async def _async_start_listen(self) -> None:
         """Start listening for realtime events."""
-        self.logger.debug("Starting ring listener.")
-        await self.event_listener.start(
-            timeout=self.start_timeout,
-        )
-        if self.event_listener.started is True:
-            self.logger.debug("Started ring listener")
-        else:
-            self.logger.warning(
-                "Ring event listener failed to start after %s seconds",
-                self.start_timeout,
+        self.logger.debug("Starting ring listener")
+        try:
+            await self.event_listener.start(
+                timeout=self.start_timeout,
             )
-        self._listen_callback_id = self.event_listener.add_notification_callback(
-            self._on_event
-        )
-        self.index_alerts()
-        # Update the listeners so they switch from Unavailable to Unknown
+        except TimeoutError as err:
+            self._handle_start_failure(err)
+            return
+        except Exception as err:
+            # Covers upstream registration failures (eg. PHONE_REGISTRATION_ERROR)
+            self._handle_start_failure(err)
+            return
+
+        if getattr(self.event_listener, "started", False):
+            # Success: clear backoff state and set up callbacks
+            if self._unavailable_logged:
+                self.logger.info("Realtime events back online")
+                self._unavailable_logged = False
+            self._start_attempts = 0
+
+            self._listen_callback_id = self.event_listener.add_notification_callback(
+                self._on_event
+            )
+            self.index_alerts()
+            # Update the listeners so they switch from Unavailable to Unknown
+            self._async_update_listeners()
+        else:
+            self._handle_start_failure(TimeoutError("listener did not report started"))
+
+    def _handle_start_failure(self, err: BaseException) -> None:
+        """Handle listener start failures and schedule retry."""
+        # Log once when the stream becomes unavailable
+        if not self._unavailable_logged:
+            self.logger.info("Realtime events unavailable: %s", err)
+            self._unavailable_logged = True
+        else:
+            self.logger.debug("Listener start failed with %s", err)
+
+        # Exponential backoff with jitter, capped at 15 minutes
+        self._start_attempts += 1
+        base = min(900, 2 ** self._start_attempts)
+        delay = base + random.uniform(0, min(30, base * 0.1))
+        self._schedule_start_retry(delay)
+
+        # Ensure entities reflect unavailability
         self._async_update_listeners()
+
+    def _schedule_start_retry(self, delay: float) -> None:
+        """Schedule a retry to start the listener."""
+        if self._start_retry_unsub is not None:
+            return
+
+        def _retry(_now: Any) -> None:
+            self._start_retry_unsub = None
+            self.config_entry.async_create_task(
+                self.hass,
+                self._async_start_listen(),
+                "Ring event listener retry",
+                eager_start=True,
+            )
+
+        self._start_retry_unsub = async_call_later(self.hass, delay, _retry)
 
     def _on_event(self, event: RingEvent) -> None:
         self.logger.debug("Ring event received: %s", event)
