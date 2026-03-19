@@ -641,6 +641,51 @@ async def test_startstop_lawn_mower(hass: HomeAssistant) -> None:
     assert unpause_calls[0].data == {ATTR_ENTITY_ID: "lawn_mower.bla"}
 
 
+async def test_startstop_binary_sensor_running(hass: HomeAssistant) -> None:
+    """Test startStop trait support for binary_sensor with device_class running."""
+    assert (
+        helpers.get_google_type(
+            binary_sensor.DOMAIN, binary_sensor.BinarySensorDeviceClass.RUNNING
+        )
+        == const.TYPE_WASHER
+    )
+    assert trait.StartStopTrait.supported(
+        binary_sensor.DOMAIN, 0, binary_sensor.BinarySensorDeviceClass.RUNNING, None
+    )
+    assert not trait.StartStopTrait.supported(
+        binary_sensor.DOMAIN, 0, binary_sensor.BinarySensorDeviceClass.MOTION, None
+    )
+    assert not trait.StartStopTrait.supported(binary_sensor.DOMAIN, 0, None, None)
+
+    trt = trait.StartStopTrait(
+        hass,
+        State(
+            "binary_sensor.washing_machine",
+            STATE_ON,
+            {ATTR_DEVICE_CLASS: binary_sensor.BinarySensorDeviceClass.RUNNING},
+        ),
+        BASIC_CONFIG,
+    )
+
+    assert trt.sync_attributes() == {"pausable": False}
+    assert trt.query_attributes() == {"isRunning": True}
+
+    trt_off = trait.StartStopTrait(
+        hass,
+        State(
+            "binary_sensor.washing_machine",
+            STATE_OFF,
+            {ATTR_DEVICE_CLASS: binary_sensor.BinarySensorDeviceClass.RUNNING},
+        ),
+        BASIC_CONFIG,
+    )
+    assert trt_off.query_attributes() == {"isRunning": False}
+
+    with pytest.raises(helpers.SmartHomeError) as err:
+        await trt.execute(trait.COMMAND_START_STOP, BASIC_DATA, {"start": True}, {})
+    assert err.value.code == const.ERR_FUNCTION_NOT_SUPPORTED
+
+
 @pytest.mark.parametrize(
     (
         "domain",
