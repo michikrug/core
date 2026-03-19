@@ -932,6 +932,12 @@ class StartStopTrait(_Trait):
             and features & COVER_VALVE_STOP_FEATURE[domain]
         ):
             return True
+        
+        if (
+            domain == BINARY_SENSOR_DOMAIN
+            and device_class == binary_sensor.BinarySensorDeviceClass.RUNNING
+        ):
+            return True
 
         return False
 
@@ -977,6 +983,8 @@ class StartStopTrait(_Trait):
             }
         if domain in COVER_VALVE_DOMAINS:
             return {}
+        if domain == BINARY_SENSOR_DOMAIN:
+            return {"pausable": False}
 
         raise NotImplementedError(f"Unsupported domain {domain}")
 
@@ -985,6 +993,11 @@ class StartStopTrait(_Trait):
         """Return StartStop query attributes."""
         domain = self.state.domain
         state = self.state.state
+
+        if domain == BINARY_SENSOR_DOMAIN:
+            return {
+                "isRunning": state == STATE_ON
+            }
 
         if domain == VACUUM_DOMAIN:
             return {
@@ -1032,6 +1045,11 @@ class StartStopTrait(_Trait):
         if domain in COVER_VALVE_DOMAINS:
             await self._execute_cover_or_valve(command, data, params, challenge)
             return
+        if domain == BINARY_SENSOR_DOMAIN:
+            raise SmartHomeError(
+                ERR_FUNCTION_NOT_SUPPORTED,
+                "binary_sensor does not support StartStop commands",
+            )
 
     async def _execute_vacuum(self, command, data, params, challenge):
         """Execute a StartStop command."""
