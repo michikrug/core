@@ -153,10 +153,10 @@
       "message": "Authentication error communicating with Ring API"
     },
     "api_error": {
-      "message": "Error communicating with Ring API"
+      "message": "Error communicating with Ring API: {error}"
     },
     "api_timeout": {
-      "message": "Timeout communicating with Ring API"
+      "message": "Timeout communicating with Ring API: {error}"
     },
     "no_subscription": {
       "message": "Ring Protect subscription required for snapshots"

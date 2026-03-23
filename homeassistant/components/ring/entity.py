@@ -73,6 +73,7 @@ def exception_wrap[_RingBaseEntityT: RingBaseEntity[Any, Any], **_P, _R](
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="api_timeout",
+                translation_placeholders={"error": str(err)},
             ) from err
         except RingError as err:
             _LOGGER.debug(
@@ -81,6 +82,7 @@ def exception_wrap[_RingBaseEntityT: RingBaseEntity[Any, Any], **_P, _R](
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="api_error",
+                translation_placeholders={"error": str(err)},
             ) from err
 
     return _wrap
