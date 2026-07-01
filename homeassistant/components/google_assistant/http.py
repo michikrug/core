@@ -126,6 +126,7 @@ class GoogleConfig(AbstractConfig):
         return self._config.get(CONF_REPORT_STATE)
 
     @property
+    @override
     def should_fulfill_async(self):
         """Return if intents should be executed asyncronously."""
         return self._config.get(CONF_ASYNC_FULFILLMENT, self._config.get(CONF_REPORT_STATE))

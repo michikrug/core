@@ -1077,10 +1077,8 @@ class StartStopTrait(_Trait):
             await self.hass.services.async_call(
                 self.state.domain,
                 service,
-                {ATTR_ENTITY_ID: self.state.entity_id},
-                blocking=not self.config.should_fulfill_async,
                 service_data,
-                blocking=not self.config.should_report_state,
+                blocking=not self.config.should_fulfill_async,
                 context=data.context,
             )
 
