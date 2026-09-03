@@ -2,6 +2,7 @@
 
 from datetime import timedelta
 from http import HTTPStatus
+from typing import cast
 from unittest.mock import Mock, call, patch
 
 import pytest
@@ -49,7 +50,9 @@ async def test_google_entity_sync_serialize_with_local_sdk(hass: HomeAssistant) 
             },
         },
     )
-    entity = helpers.GoogleEntity(hass, config, hass.states.get("light.ceiling_lights"))
+    state = hass.states.get("light.ceiling_lights")
+    assert state is not None
+    entity = helpers.GoogleEntity(hass, config, state)
 
     serialized = entity.sync_serialize(None, "mock-uuid")
     assert "otherDeviceIds" not in serialized
@@ -100,9 +103,9 @@ async def test_google_entity_sync_serialize_with_matter(
     )
     hass.states.async_set("light.ceiling_lights", "off")
 
-    entity = helpers.GoogleEntity(
-        hass, MockConfig(hass=hass), hass.states.get("light.ceiling_lights")
-    )
+    state = hass.states.get("light.ceiling_lights")
+    assert state is not None
+    entity = helpers.GoogleEntity(hass, MockConfig(hass=hass), state)
 
     serialized = entity.sync_serialize(None, "mock-uuid")
     assert "matterUniqueId" not in serialized
@@ -170,9 +173,9 @@ async def test_google_entity_sync_serialize_child_device(
     assert area_reg_entry is not None
     assert area_reg_entry.id == area.id
 
-    entity = helpers.GoogleEntity(
-        hass, MockConfig(hass=hass), hass.states.get("light.ceiling_lights")
-    )
+    state = hass.states.get("light.ceiling_lights")
+    assert state is not None
+    entity = helpers.GoogleEntity(hass, MockConfig(hass=hass), state)
     serialized = entity.sync_serialize(None, "mock-uuid")
 
     assert serialized["roomHint"] == "Living Room"
@@ -303,7 +306,7 @@ async def test_config_local_sdk_if_ssl_enabled(
 ) -> None:
     """Test the local SDK is not enabled when SSL is enabled."""
     assert await async_setup_component(hass, "webhook", {})
-    hass.config.api.use_ssl = True
+    hass.config.api = Mock(use_ssl=True)
 
     config = MockConfig(
         hass=hass,
@@ -333,16 +336,16 @@ async def test_agent_user_id_connect() -> None:
     store = config._store
 
     await config.async_connect_agent_user("agent_2")
-    assert store.add_agent_user_id.call_args == call("agent_2")
+    assert cast(Mock, store.add_agent_user_id).call_args == call("agent_2")
 
     await config.async_connect_agent_user("agent_1")
-    assert store.add_agent_user_id.call_args == call("agent_1")
+    assert cast(Mock, store.add_agent_user_id).call_args == call("agent_1")
 
     await config.async_disconnect_agent_user("agent_2")
-    assert store.pop_agent_user_id.call_args == call("agent_2")
+    assert cast(Mock, store.pop_agent_user_id).call_args == call("agent_2")
 
     await config.async_disconnect_agent_user("agent_1")
-    assert store.pop_agent_user_id.call_args == call("agent_1")
+    assert cast(Mock, store.pop_agent_user_id).call_args == call("agent_1")
 
 
 @pytest.mark.parametrize("agents", [{}, {"1"}, {"1", "2"}])
@@ -394,10 +397,12 @@ async def test_sync_entities_all(agents, result) -> None:
         assert res == result
 
 
-def test_supported_features_string(caplog: pytest.LogCaptureFixture) -> None:
+def test_supported_features_string(
+    hass: HomeAssistant, caplog: pytest.LogCaptureFixture
+) -> None:
     """Test bad supported features."""
     entity = helpers.GoogleEntity(
-        None,
+        hass,
         MockConfig(),
         State("test.entity_id", "on", {"supported_features": "invalid"}),
     )

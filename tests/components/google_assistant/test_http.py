@@ -694,7 +694,9 @@ async def test_async_get_users(
         hass.config.config_dir = await hass.async_add_executor_job(
             tmpdir.mkdir, "temp_storage"
         )
-        path = hass.config.config_dir / ".storage" / GoogleConfigStore._STORAGE_KEY
+        path = (
+            Path(hass.config.config_dir) / ".storage" / GoogleConfigStore._STORAGE_KEY
+        )
         os.makedirs(os.path.dirname(path), exist_ok=True)
         await hass.async_add_executor_job(Path(path).write_text, store_data)
         assert await async_get_users(hass) == expected_users

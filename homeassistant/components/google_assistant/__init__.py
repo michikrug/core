@@ -11,6 +11,7 @@ from homeassistant.helpers.typing import ConfigType
 
 from .const import (  # noqa: F401
     CONF_ALIASES,
+    CONF_ASYNC_FULFILLMENT,
     CONF_CLIENT_EMAIL,
     CONF_ENTITY_CONFIG,
     CONF_EXPOSE,
@@ -19,7 +20,6 @@ from .const import (  # noqa: F401
     CONF_PRIVATE_KEY,
     CONF_PROJECT_ID,
     CONF_REPORT_STATE,
-    CONF_ASYNC_FULFILLMENT,
     CONF_ROOM_HINT,
     CONF_SECURE_DEVICES_PIN,
     CONF_SERVICE_ACCOUNT,
