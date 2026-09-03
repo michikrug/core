@@ -1,5 +1,6 @@
 """Test diagnostics."""
 
+from collections.abc import AsyncGenerator
 from unittest.mock import patch
 
 import pytest
@@ -18,7 +19,7 @@ from .test_http import DUMMY_CONFIG
 
 
 @pytest.fixture(autouse=True)
-async def switch_only() -> None:
+async def switch_only() -> AsyncGenerator[None]:
     """Enable only the switch platform."""
     with patch(
         "homeassistant.components.demo.COMPONENTS_WITH_CONFIG_ENTRY_DEMO_PLATFORM",

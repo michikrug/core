@@ -22,6 +22,7 @@ from homeassistant.helpers.storage import STORAGE_DIR, Store
 from homeassistant.util import dt as dt_util, json as json_util
 
 from .const import (
+    CONF_ASYNC_FULFILLMENT,
     CONF_CLIENT_EMAIL,
     CONF_ENTITY_CONFIG,
     CONF_EXPOSE,
@@ -30,7 +31,6 @@ from .const import (
     CONF_PRIVATE_KEY,
     CONF_PROJECT_ID,
     CONF_REPORT_STATE,
-    CONF_ASYNC_FULFILLMENT,
     CONF_SECURE_DEVICES_PIN,
     CONF_SERVICE_ACCOUNT,
     DATA_CONFIG,
@@ -65,9 +65,7 @@ def _get_homegraph_jwt(time, iss, key):
     return jwt.encode(jwt_raw, key, algorithm="RS256")
 
 
-async def _get_homegraph_token(
-    hass: HomeAssistant, jwt_signed: str
-) -> dict[str, Any]:
+async def _get_homegraph_token(hass: HomeAssistant, jwt_signed: str) -> dict[str, Any]:
     """Get homegraph token from Google."""
     headers = {
         "Authorization": f"Bearer {jwt_signed}",
@@ -176,8 +174,10 @@ class GoogleConfig(AbstractConfig):
     @property
     @override
     def should_fulfill_async(self):
-        """Return if intents should be executed asyncronously."""
-        return self._config.get(CONF_ASYNC_FULFILLMENT, self._config.get(CONF_REPORT_STATE))
+        """Return if intents should be executed asynchronously."""
+        return self._config.get(
+            CONF_ASYNC_FULFILLMENT, self._config.get(CONF_REPORT_STATE)
+        )
 
     @override
     def get_local_user_id(self, webhook_id):
@@ -318,7 +318,7 @@ class GoogleConfig(AbstractConfig):
             self._access_token = token["access_token"]
             self._access_token_renew = now + timedelta(seconds=token["expires_in"])
 
-    async def async_call_homegraph_api(self, url, data):
+    async def async_call_homegraph_api(self, url, data) -> HTTPStatus:
         """Call a homegraph api with authentication."""
         session = async_get_clientsession(self.hass)
 
@@ -332,7 +332,7 @@ class GoogleConfig(AbstractConfig):
                     "Response on %s with data %s was %s", url, data, await res.text()
                 )
                 res.raise_for_status()
-                return res.status
+                return HTTPStatus(res.status)
 
         try:
             await self._async_update_token()
@@ -348,7 +348,7 @@ class GoogleConfig(AbstractConfig):
                 raise
         except ClientResponseError as error:
             _LOGGER.error("Request for %s failed: %d", url, error.status)
-            return error.status
+            return HTTPStatus(error.status)
         except TimeoutError, ClientError:
             _LOGGER.error("Could not contact %s", url)
             return HTTPStatus.INTERNAL_SERVER_ERROR
