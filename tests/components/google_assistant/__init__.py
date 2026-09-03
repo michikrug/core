@@ -1,5 +1,6 @@
 """Tests for the Google Assistant integration."""
 
+from typing import Literal, cast
 from unittest.mock import MagicMock
 
 from homeassistant.components.google_assistant import http
@@ -42,9 +43,9 @@ class MockConfig(http.GoogleConfig):
         self._store = mock_google_config_store(agent_user_ids)
 
     @property
-    def enabled(self):
+    def enabled(self) -> Literal[True]:
         """Return if Google is enabled."""
-        return self._enabled
+        return cast(Literal[True], self._enabled)
 
     @property
     def secure_devices_pin(self):
@@ -67,6 +68,11 @@ class MockConfig(http.GoogleConfig):
     @property
     def should_report_state(self):
         """Return if states should be proactively reported."""
+        return self._should_report_state
+
+    @property
+    def should_fulfill_async(self):
+        """Return if intents should be executed asynchronously."""
         return self._should_report_state
 
     def should_2fa(self, state):
