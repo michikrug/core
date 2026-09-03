@@ -434,7 +434,7 @@ class CameraStreamTrait(_Trait):
 
     @staticmethod
     @override
-    def supported(domain, features, device_class, _):
+    def supported(domain, features, device_class, attributes):
         """Test if state is supported."""
         if domain == CAMERA_DOMAIN:
             return features & CameraEntityFeature.STREAM
@@ -477,7 +477,7 @@ class ObjectDetection(_Trait):
 
     @staticmethod
     @override
-    def supported(domain, features, device_class, _) -> bool:
+    def supported(domain, features, device_class, attributes) -> bool:
         """Test if state is supported."""
         return (
             domain == EVENT_DOMAIN and device_class == event.EventDeviceClass.DOORBELL
@@ -541,7 +541,7 @@ class OnOffTrait(_Trait):
 
     @staticmethod
     @override
-    def supported(domain, features, device_class, _):
+    def supported(domain, features, device_class, attributes):
         """Test if state is supported."""
         if domain == WATER_HEATER_DOMAIN and features & WaterHeaterEntityFeature.ON_OFF:
             return True
@@ -753,7 +753,7 @@ class SceneTrait(_Trait):
 
     @staticmethod
     @override
-    def supported(domain, features, device_class, _):
+    def supported(domain, features, device_class, attributes):
         """Test if state is supported."""
         return domain in (
             BUTTON_DOMAIN,
@@ -806,7 +806,7 @@ class DockTrait(_Trait):
 
     @staticmethod
     @override
-    def supported(domain, features, device_class, _):
+    def supported(domain, features, device_class, attributes):
         """Test if state is supported."""
         return domain in (VACUUM_DOMAIN, LAWN_MOWER_DOMAIN)
 
@@ -859,7 +859,7 @@ class LocatorTrait(_Trait):
 
     @staticmethod
     @override
-    def supported(domain, features, device_class, _):
+    def supported(domain, features, device_class, attributes):
         """Test if state is supported."""
         return domain == VACUUM_DOMAIN and features & VacuumEntityFeature.LOCATE
 
@@ -903,7 +903,7 @@ class StartStopTrait(_Trait):
 
     @staticmethod
     @override
-    def supported(domain, features, device_class, _):
+    def supported(domain, features, device_class, attributes):
         """Test if state is supported."""
         if domain in (VACUUM_DOMAIN, LAWN_MOWER_DOMAIN):
             return True
@@ -913,7 +913,7 @@ class StartStopTrait(_Trait):
             and features & COVER_VALVE_STOP_FEATURE[domain]
         ):
             return True
-        
+
         if (
             domain == BINARY_SENSOR_DOMAIN
             and device_class == binary_sensor.BinarySensorDeviceClass.RUNNING
@@ -976,9 +976,7 @@ class StartStopTrait(_Trait):
         state = self.state.state
 
         if domain == BINARY_SENSOR_DOMAIN:
-            return {
-                "isRunning": state == STATE_ON
-            }
+            return {"isRunning": state == STATE_ON}
 
         if domain == VACUUM_DOMAIN:
             return {
@@ -1181,7 +1179,7 @@ class TemperatureControlTrait(_Trait):
 
     @staticmethod
     @override
-    def supported(domain, features, device_class, _):
+    def supported(domain, features, device_class, attributes):
         """Test if state is supported."""
         return (
             domain == WATER_HEATER_DOMAIN
@@ -1350,7 +1348,7 @@ class TemperatureSettingTrait(_Trait):
 
     @staticmethod
     @override
-    def supported(domain, features, device_class, _):
+    def supported(domain, features, device_class, attributes):
         """Test if state is supported."""
         return domain == CLIMATE_DOMAIN
 
@@ -1653,7 +1651,7 @@ class HumiditySettingTrait(_Trait):
 
     @staticmethod
     @override
-    def supported(domain, features, device_class, _):
+    def supported(domain, features, device_class, attributes):
         """Test if state is supported."""
         if domain == HUMIDIFIER_DOMAIN:
             return True
@@ -1756,7 +1754,7 @@ class LockUnlockTrait(_Trait):
 
     @staticmethod
     @override
-    def supported(domain, features, device_class, _):
+    def supported(domain, features, device_class, attributes):
         """Test if state is supported."""
         return domain == LOCK_DOMAIN
 
@@ -1829,7 +1827,7 @@ class ArmDisArmTrait(_Trait):
 
     @staticmethod
     @override
-    def supported(domain, features, device_class, _):
+    def supported(domain, features, device_class, attributes):
         """Test if state is supported."""
         return domain == ALARM_CONTROL_PANEL_DOMAIN
 
@@ -1978,7 +1976,7 @@ class FanSpeedTrait(_Trait):
 
     @staticmethod
     @override
-    def supported(domain, features, device_class, _):
+    def supported(domain, features, device_class, attributes):
         """Test if state is supported."""
         if domain == FAN_DOMAIN:
             return features & FanEntityFeature.SET_SPEED
@@ -2145,7 +2143,7 @@ class ModesTrait(_Trait):
 
     @staticmethod
     @override
-    def supported(domain, features, device_class, _):
+    def supported(domain, features, device_class, attributes):
         """Test if state is supported."""
         if domain == FAN_DOMAIN and features & FanEntityFeature.PRESET_MODE:
             return True
@@ -2396,7 +2394,7 @@ class InputSelectorTrait(_Trait):
 
     @staticmethod
     @override
-    def supported(domain, features, device_class, _):
+    def supported(domain, features, device_class, attributes):
         """Test if state is supported."""
         if domain == MEDIA_PLAYER_DOMAIN and (
             features & MediaPlayerEntityFeature.SELECT_SOURCE
@@ -2481,7 +2479,7 @@ class OpenCloseTrait(_Trait):
 
     @staticmethod
     @override
-    def supported(domain, features, device_class, _):
+    def supported(domain, features, device_class, attributes):
         """Test if state is supported."""
         if domain in COVER_VALVE_DOMAINS:
             return True
@@ -2639,7 +2637,7 @@ class VolumeTrait(_Trait):
 
     @staticmethod
     @override
-    def supported(domain, features, device_class, _):
+    def supported(domain, features, device_class, attributes):
         """Test if trait is supported."""
         if domain == MEDIA_PLAYER_DOMAIN:
             return features & (
@@ -2832,7 +2830,7 @@ class TransportControlTrait(_Trait):
 
     @staticmethod
     @override
-    def supported(domain, features, device_class, _):
+    def supported(domain, features, device_class, attributes):
         """Test if state is supported."""
         if domain == MEDIA_PLAYER_DOMAIN:
             for feature in MEDIA_COMMAND_SUPPORT_MAPPING.values():
@@ -2959,7 +2957,7 @@ class MediaStateTrait(_Trait):
 
     @staticmethod
     @override
-    def supported(domain, features, device_class, _):
+    def supported(domain, features, device_class, attributes):
         """Test if state is supported."""
         return domain == MEDIA_PLAYER_DOMAIN
 
@@ -2989,7 +2987,7 @@ class ChannelTrait(_Trait):
 
     @staticmethod
     @override
-    def supported(domain, features, device_class, _):
+    def supported(domain, features, device_class, attributes):
         """Test if state is supported."""
         if (
             domain == MEDIA_PLAYER_DOMAIN
@@ -3094,12 +3092,15 @@ class SensorStateTrait(_Trait):
 
         return "hazardous"
 
-    @classmethod
+    @staticmethod
     @override
-    def supported(cls, domain, features, device_class, _):
+    def supported(domain, features, device_class, attributes):
         """Test if state is supported."""
-        return (domain == SENSOR_DOMAIN and device_class in cls.sensor_types) or (
-            domain == BINARY_SENSOR_DOMAIN and device_class in cls.binary_sensor_types
+        return (
+            domain == SENSOR_DOMAIN and device_class in SensorStateTrait.sensor_types
+        ) or (
+            domain == BINARY_SENSOR_DOMAIN
+            and device_class in SensorStateTrait.binary_sensor_types
         )
 
     @override

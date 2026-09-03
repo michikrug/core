@@ -1,5 +1,6 @@
 """The tests for the Google Assistant component."""
 
+from collections.abc import AsyncGenerator
 from http import HTTPStatus
 import json
 from unittest.mock import patch
@@ -63,7 +64,7 @@ async def assistant_client(
 
 
 @pytest.fixture(autouse=True)
-async def wanted_platforms_only() -> None:
+async def wanted_platforms_only() -> AsyncGenerator[None]:
     """Enable only the wanted demo platforms."""
     with patch(
         "homeassistant.components.demo.COMPONENTS_WITH_CONFIG_ENTRY_DEMO_PLATFORM",

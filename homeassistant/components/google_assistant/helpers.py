@@ -145,7 +145,7 @@ class AbstractConfig(ABC):
     @property
     @abstractmethod
     def should_fulfill_async(self):
-        """Return if intents should be executed asyncronously."""
+        """Return if intents should be executed asynchronously."""
 
     @property
     def is_local_connected(self) -> bool:
@@ -531,7 +531,10 @@ class GoogleEntity:
     @override
     def __repr__(self) -> str:
         """Return the representation."""
-        return f"<GoogleEntity {self.entity_id}: {self.state.name}>"
+        return (
+            f"<GoogleEntity {self.entity_id}: "
+            f"{self.state.name if self.state is not None else 'unknown'}>"
+        )
 
     @callback
     def traits(self) -> list[trait._Trait]:

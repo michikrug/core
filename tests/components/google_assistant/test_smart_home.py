@@ -1,6 +1,7 @@
 """Test Google Smart Home."""
 
 import asyncio
+from collections.abc import AsyncGenerator
 from types import SimpleNamespace
 from unittest.mock import ANY, patch
 
@@ -58,7 +59,7 @@ REQ_ID = "ff36a3cc-ec34-11e6-b1a0-64510650abcf"
 
 
 @pytest.fixture
-async def light_only() -> None:
+async def light_only() -> AsyncGenerator[None]:
     """Enable only the light platform."""
     with patch(
         "homeassistant.components.demo.COMPONENTS_WITH_CONFIG_ENTRY_DEMO_PLATFORM",
@@ -311,7 +312,7 @@ async def test_sync_in_area(
     )
 
     light = DemoLight(
-        None,
+        "1235",
         "Demo Light",
         state=False,
         hs_color=(180, 75),
@@ -408,7 +409,7 @@ async def test_sync_in_area(
 async def test_query_message(hass: HomeAssistant) -> None:
     """Test a sync message."""
     light = DemoLight(
-        None,
+        "demo_light",
         "Demo Light",
         state=False,
         hs_color=(180, 75),
@@ -424,7 +425,12 @@ async def test_query_message(hass: HomeAssistant) -> None:
     light.async_write_ha_state()
 
     light2 = DemoLight(
-        None, "Another Light", state=True, hs_color=(180, 75), ct=2500, brightness=78
+        "another_light",
+        "Another Light",
+        state=True,
+        hs_color=(180, 75),
+        ct=2500,
+        brightness=78,
     )
     light2.hass = hass
     light2.platform = MockEntityPlatform(hass)
@@ -434,7 +440,9 @@ async def test_query_message(hass: HomeAssistant) -> None:
     light2._platform_state = EntityPlatformState.ADDED
     light2.async_write_ha_state()
 
-    light3 = DemoLight(None, "Color temp Light", state=True, ct=2500, brightness=200)
+    light3 = DemoLight(
+        "color_temp_light", "Color temp Light", state=True, ct=2500, brightness=200
+    )
     light3.hass = hass
     light3.platform = MockEntityPlatform(hass)
     light3.entity_id = "light.color_temp_light"
@@ -919,7 +927,7 @@ async def test_serialize_input_boolean(hass: HomeAssistant) -> None:
 async def test_unavailable_state_does_sync(hass: HomeAssistant) -> None:
     """Test that an unavailable entity does sync over."""
     light = DemoLight(
-        None,
+        "demo_light_unique_id",
         "Demo Light",
         state=False,
         hs_color=(180, 75),
@@ -929,7 +937,7 @@ async def test_unavailable_state_does_sync(hass: HomeAssistant) -> None:
     light.hass = hass
     light.platform = MockEntityPlatform(hass)
     light.entity_id = "light.demo_light"
-    light._available = False
+    light._attr_available = False
     light._attr_device_info = None
     light._attr_name = "Demo Light"
     light._platform_state = EntityPlatformState.ADDED
@@ -1019,7 +1027,7 @@ async def test_device_class_switch(
 ) -> None:
     """Test that a cover entity syncs to the correct device type."""
     switch = DemoSwitch(
-        None,
+        "demo_switch",
         "Demo switch",
         state=False,
         assumed=False,
@@ -1075,7 +1083,10 @@ async def test_device_class_binary_sensor(
 ) -> None:
     """Test that a binary entity syncs to the correct device type."""
     binary_sensor = DemoBinarySensor(
-        None, "Demo Binary Sensor", state=False, device_class=device_class
+        "demo_binary_sensor",
+        "Demo Binary Sensor",
+        state=False,
+        device_class=device_class,
     )
     binary_sensor.hass = hass
     binary_sensor.platform = MockEntityPlatform(hass)
@@ -1132,7 +1143,7 @@ async def test_device_class_cover(
     hass: HomeAssistant, device_class, google_type
 ) -> None:
     """Test that a cover entity syncs to the correct device type."""
-    cover = DemoCover(None, hass, "Demo Cover", device_class=device_class)
+    cover = DemoCover(hass, "demo_cover", "Demo Cover", device_class=device_class)
     cover.hass = hass
     cover.platform = MockEntityPlatform(hass)
     cover.entity_id = "cover.demo_cover"
@@ -1486,7 +1497,7 @@ async def test_sync_message_recovery(
 ) -> None:
     """Test a sync message recovers from bad entities."""
     light = DemoLight(
-        None,
+        "demo_light_unique_id",
         "Demo Light",
         state=False,
         hs_color=(180, 75),
