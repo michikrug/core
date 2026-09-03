@@ -1741,7 +1741,7 @@ async def test_temperature_control(hass: HomeAssistant) -> None:
     """Test TemperatureControl trait support for sensor domain."""
     trt = trait.TemperatureControlTrait(
         hass,
-        State("sensor.temp", 18),
+        State("sensor.temp", "18"),
         BASIC_CONFIG,
     )
     assert trt.sync_attributes() == {
@@ -4268,7 +4268,7 @@ async def test_air_quality_description_for_aqi(hass: HomeAssistant) -> None:
         hass,
         State(
             "sensor.test",
-            100.0,
+            "100.0",
             {
                 "device_class": sensor.SensorDeviceClass.AQI,
             },
@@ -4293,7 +4293,7 @@ async def test_null_device_class(hass: HomeAssistant) -> None:
         hass,
         State(
             "sensor.test",
-            100.0,
+            "100.0",
             {
                 "device_class": None,
             },

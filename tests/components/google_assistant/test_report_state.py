@@ -216,9 +216,11 @@ async def test_report_notifications(
             hass, datetime.fromisoformat("2023-08-01T01:01:00+00:00")
         )
         await hass.async_block_till_done()
+        states = None
         for call in mock_report_state.mock_calls:
             if "states" in call[1][0]["devices"]:
                 states = call[1][0]["devices"]["states"]
+        assert states is not None
         assert states["event.doorbell"] == {"online": True}
 
     # Test the notification request failed
@@ -238,9 +240,11 @@ async def test_report_notifications(
         )
         await hass.async_block_till_done()
         assert len(mock_report_state.mock_calls) == 1
+        notifications = None
         for call in mock_report_state.mock_calls:
             if "notifications" in call[1][0]["devices"]:
                 notifications = call[1][0]["devices"]["notifications"]
+        assert notifications is not None
         assert notifications["event.doorbell"] == {
             "ObjectDetection": {
                 "objects": {"unclassified": 1},
