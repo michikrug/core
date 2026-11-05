@@ -160,6 +160,7 @@ class GoogleConfig(AbstractConfig):
                     translation_placeholders={"option": key},
                 )
         self.hass.data[DATA_CONFIG] = self._config = config
+        self.is_supported_cache.clear()
         self.async_update_report_state()
         return True
 

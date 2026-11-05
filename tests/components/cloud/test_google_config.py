@@ -82,6 +82,7 @@ async def test_google_update_report_state(
 
     assert len(mock_sync.mock_calls) == 1
     assert len(mock_report_state.mock_calls) == 1
+    assert mock_conf.should_fulfill_async
 
 
 async def test_google_update_report_state_subscription_expired(
@@ -106,6 +107,7 @@ async def test_google_update_report_state_subscription_expired(
 
     assert len(mock_sync.mock_calls) == 0
     assert len(mock_report_state.mock_calls) == 0
+    assert not mock_conf.should_fulfill_async
 
 
 async def test_sync_entities(

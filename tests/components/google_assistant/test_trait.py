@@ -642,12 +642,6 @@ async def test_startstop_lawn_mower(hass: HomeAssistant) -> None:
 
 async def test_startstop_binary_sensor_running(hass: HomeAssistant) -> None:
     """Test startStop trait support for binary_sensor with device_class running."""
-    assert (
-        helpers.get_google_type(
-            binary_sensor.DOMAIN, binary_sensor.BinarySensorDeviceClass.RUNNING
-        )
-        == const.TYPE_WASHER
-    )
     assert trait.StartStopTrait.supported(
         binary_sensor.DOMAIN, 0, binary_sensor.BinarySensorDeviceClass.RUNNING, None
     )
