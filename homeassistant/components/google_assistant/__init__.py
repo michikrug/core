@@ -3,13 +3,14 @@
 import probatio
 
 from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
-from homeassistant.const import CONF_API_KEY, CONF_NAME, Platform
+from homeassistant.const import CONF_API_KEY, CONF_NAME, CONF_TYPE, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryError
 from homeassistant.helpers import config_validation as cv, device_registry as dr
 from homeassistant.helpers.typing import ConfigType
 
 from .const import (
+    APPLIANCE_TYPES,
     CONF_ALIASES,
     CONF_ASYNC_FULFILLMENT,
     CONF_CLIENT_EMAIL,
@@ -44,6 +45,7 @@ ENTITY_SCHEMA = probatio.Schema(
             probatio.EnsureList(), [cv.string]
         ),
         probatio.Optional(CONF_ROOM_HINT): cv.string,
+        probatio.Optional(CONF_TYPE): probatio.In(APPLIANCE_TYPES),
     }
 )
 

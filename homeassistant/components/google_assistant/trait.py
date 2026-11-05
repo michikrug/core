@@ -995,6 +995,8 @@ class StartStopTrait(_Trait):
         state = self.state.state
 
         if domain == BINARY_SENSOR_DOMAIN:
+            if state == STATE_UNKNOWN:
+                raise SmartHomeError(ERR_NOT_SUPPORTED, "Running state is unknown")
             return {"isRunning": state == STATE_ON}
 
         if domain == VACUUM_DOMAIN:

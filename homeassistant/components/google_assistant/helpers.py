@@ -15,7 +15,16 @@ from awesomeversion import AwesomeVersion
 from yarl import URL
 
 from homeassistant.components import webhook
-from homeassistant.const import CONF_NAME, STATE_UNAVAILABLE, EntityStateAttribute
+from homeassistant.components.binary_sensor import (
+    DOMAIN as BINARY_SENSOR_DOMAIN,
+    BinarySensorDeviceClass,
+)
+from homeassistant.const import (
+    CONF_NAME,
+    CONF_TYPE,
+    STATE_UNAVAILABLE,
+    EntityStateAttribute,
+)
 from homeassistant.core import CALLBACK_TYPE, Context, HomeAssistant, State, callback
 from homeassistant.helpers import (
     area_registry as ar,
@@ -31,6 +40,7 @@ from homeassistant.util.dt import utcnow
 
 from . import trait
 from .const import (
+    APPLIANCE_TYPES,
     CONF_ALIASES,
     CONF_ROOM_HINT,
     DEVICE_CLASS_TO_GOOGLE_TYPES,
@@ -542,9 +552,23 @@ class GoogleEntity:
         if self._traits is not None:
             return self._traits
         state = self.state
+        appliance_type = self.config.entity_config.get(self.entity_id, {}).get(
+            CONF_TYPE
+        )
+        is_running_sensor = (
+            state.domain == BINARY_SENSOR_DOMAIN
+            and state.attributes.get(EntityStateAttribute.DEVICE_CLASS)
+            == BinarySensorDeviceClass.RUNNING
+        )
+        if appliance_type is not None and not is_running_sensor:
+            raise SmartHomeError(
+                ERR_FUNCTION_NOT_SUPPORTED,
+                "Appliance type requires a running binary sensor",
+            )
         self._traits = [
             Trait(self.hass, state, self.config)
             for Trait in supported_traits_for_state(state)
+            if not is_running_sensor or appliance_type is not None
         ]
         return self._traits
 
@@ -621,6 +645,8 @@ class GoogleEntity:
                 state.domain, state.attributes.get(EntityStateAttribute.DEVICE_CLASS)
             ),
         }
+        if appliance_type := entity_config.get(CONF_TYPE):
+            device["type"] = APPLIANCE_TYPES[appliance_type]
         # Add name and aliases.
         # The entity's alias list is ordered: the first slot naturally serves
         # as the primary name (set to the auto-generated full entity name by
@@ -796,7 +822,13 @@ def async_get_google_entity_if_supported(
     """
     features: int | None = state.attributes.get(EntityStateAttribute.SUPPORTED_FEATURES)
     entity = GoogleEntity(hass, config, state)
-    is_supported = bool(entity.traits())
+    try:
+        is_supported = bool(entity.traits())
+    except SmartHomeError as err:
+        _LOGGER.warning(
+            "Invalid Google Assistant configuration for %s: %s", state.entity_id, err
+        )
+        is_supported = False
     config.is_supported_cache[state.entity_id] = (features, is_supported)
     return entity if is_supported else None
 

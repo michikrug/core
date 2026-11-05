@@ -30,12 +30,18 @@ from homeassistant.components.demo.media_player import AbstractDemoPlayer
 
 # pylint: disable-next=home-assistant-component-root-import
 from homeassistant.components.demo.switch import DemoSwitch
-from homeassistant.components.google_assistant import const, smart_home as sh, trait
+from homeassistant.components.google_assistant import (
+    GOOGLE_ASSISTANT_SCHEMA,
+    const,
+    smart_home as sh,
+    trait,
+)
 from homeassistant.components.google_assistant.const import (
     EVENT_COMMAND_RECEIVED,
     EVENT_QUERY_RECEIVED,
     EVENT_SYNC_RECEIVED,
 )
+from homeassistant.components.google_assistant.http import GoogleConfig
 from homeassistant.const import (
     ATTR_UNIT_OF_MEASUREMENT,
     EVENT_CALL_SERVICE,
@@ -43,7 +49,7 @@ from homeassistant.const import (
     UnitOfTemperature,
     __version__,
 )
-from homeassistant.core import HomeAssistant, State
+from homeassistant.core import HomeAssistant, ServiceCall, State
 from homeassistant.core_config import async_process_ha_core_config
 from homeassistant.helpers import (
     area_registry as ar,
@@ -55,6 +61,7 @@ from homeassistant.helpers.entity import EntityPlatformState
 from homeassistant.setup import async_setup_component
 
 from . import BASIC_CONFIG, MockConfig
+from .test_http import DUMMY_CONFIG
 
 REQ_ID = "ff36a3cc-ec34-11e6-b1a0-64510650abcf"
 
@@ -670,6 +677,66 @@ async def test_execute(
     }
     assert service_events[2].context == events[0].context
     assert service_events[3].context == events[0].context
+
+
+async def test_execute_waits_with_report_state(hass: HomeAssistant) -> None:
+    """Report state without returning the pre-command state in EXECUTE."""
+    config = GoogleConfig(
+        hass,
+        GOOGLE_ASSISTANT_SCHEMA(
+            {**DUMMY_CONFIG, "report_state": True, "async_fulfillment": False}
+        ),
+    )
+    hass.states.async_set("switch.test", "off")
+
+    async def turn_on(call: ServiceCall) -> None:
+        await asyncio.sleep(0.01)
+        hass.states.async_set(call.data["entity_id"], "on")
+
+    hass.services.async_register("switch", "turn_on", turn_on)
+
+    result = await sh.async_handle_message(
+        hass,
+        config,
+        None,
+        None,
+        {
+            "requestId": REQ_ID,
+            "inputs": [
+                {
+                    "intent": "action.devices.EXECUTE",
+                    "payload": {
+                        "commands": [
+                            {
+                                "devices": [{"id": "switch.test"}],
+                                "execution": [
+                                    {
+                                        "command": "action.devices.commands.OnOff",
+                                        "params": {"on": True},
+                                    }
+                                ],
+                            }
+                        ]
+                    },
+                }
+            ],
+        },
+        const.SOURCE_CLOUD,
+    )
+
+    assert config.should_report_state
+    assert result == {
+        "requestId": REQ_ID,
+        "payload": {
+            "commands": [
+                {
+                    "ids": ["switch.test"],
+                    "status": "SUCCESS",
+                    "states": {"online": True, "on": True},
+                }
+            ]
+        },
+    }
 
 
 @pytest.mark.parametrize(
