@@ -304,6 +304,12 @@ class CloudGoogleConfig(AbstractConfig):
         """Return if states should be proactively reported."""
         return self.enabled and self._prefs.google_report_state
 
+    @property
+    @override
+    def should_fulfill_async(self) -> bool:
+        """Return if intents should be executed asynchronously."""
+        return self.should_report_state
+
     @override
     def get_local_webhook_id(self, agent_user_id: Any) -> str:
         """Return the webhook ID for actions for an agent user id via the local SDK."""
